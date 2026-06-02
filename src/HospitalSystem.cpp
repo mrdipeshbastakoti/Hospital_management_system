@@ -1,5 +1,6 @@
 #include "../include/HospitalSystem.h"
 #include <limits>
+#include <cctype>
 
 HospitalSystem::HospitalSystem()
     : admin(1, "System Admin", "010-0000-0000", "admin@hospital.com", 1),
@@ -28,6 +29,177 @@ bool HospitalSystem::patientExists(int patientId) const {
     return false;
 }
 
+// Checks if the user entered nothing.
+bool HospitalSystem::isEmpty(string value) const {
+    return value.length() == 0;
+}
+
+// Simple email check.
+// It rejects wrong values like 77 because email must contain @ and .
+bool HospitalSystem::isValidEmail(string email) const {
+    int atPosition = email.find('@');
+    int dotPosition = email.find('.');
+
+    if (email.length() < 5) {
+        return false;
+    }
+
+    if (atPosition == string::npos || dotPosition == string::npos) {
+        return false;
+    }
+
+    if (atPosition == 0 || atPosition == email.length() - 1) {
+        return false;
+    }
+
+    if (dotPosition == 0 || dotPosition == email.length() - 1) {
+        return false;
+    }
+
+    return true;
+}
+
+// Phone number should not accept random words.
+// This allows only numbers and hyphen, like 010-1234-5678.
+bool HospitalSystem::isValidPhone(string phone) const {
+    if (phone.length() < 8 || phone.length() > 15) {
+        return false;
+    }
+
+    for (char ch : phone) {
+        if (!isdigit(ch) && ch != '-') {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// Only real week days are accepted.
+bool HospitalSystem::isValidDay(string day) const {
+    return day == "Monday" ||
+           day == "Tuesday" ||
+           day == "Wednesday" ||
+           day == "Thursday" ||
+           day == "Friday" ||
+           day == "Saturday" ||
+           day == "Sunday";
+}
+
+// Age should be realistic.
+bool HospitalSystem::isValidAge(int age) const {
+    return age > 0 && age <= 120;
+}
+
+// This is used for text fields that cannot be empty.
+string HospitalSystem::getRequiredText(string message) {
+    string value;
+
+    do {
+        cout << message;
+        getline(cin, value);
+
+        if (isEmpty(value)) {
+            cout << "This field cannot be empty. Please try again." << endl;
+        }
+
+    } while (isEmpty(value));
+
+    return value;
+}
+
+// This keeps asking until the email looks valid.
+string HospitalSystem::getValidEmail() {
+    string email;
+
+    do {
+        cout << "Enter email: ";
+        getline(cin, email);
+
+        if (!isValidEmail(email)) {
+            cout << "Invalid email. Email must contain @ and ." << endl;
+        }
+
+    } while (!isValidEmail(email));
+
+    return email;
+}
+
+// This keeps asking until the phone number is valid.
+string HospitalSystem::getValidPhone() {
+    string phone;
+
+    do {
+        cout << "Enter phone: ";
+        getline(cin, phone);
+
+        if (!isValidPhone(phone)) {
+            cout << "Invalid phone. Use only numbers and hyphen, like 010-1234-5678." << endl;
+        }
+
+    } while (!isValidPhone(phone));
+
+    return phone;
+}
+
+// This keeps asking until the user enters a real day name.
+string HospitalSystem::getValidDay() {
+    string day;
+
+    do {
+        cout << "Enter available day: ";
+        getline(cin, day);
+
+        if (!isValidDay(day)) {
+            cout << "Invalid day. Please enter Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, or Sunday." << endl;
+        }
+
+    } while (!isValidDay(day));
+
+    return day;
+}
+
+// This keeps asking until the user enters a valid age number.
+int HospitalSystem::getValidAge() {
+    int age;
+
+    while (true) {
+        cout << "Enter age: ";
+        cin >> age;
+
+        if (cin.fail()) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid age. Please enter a number." << endl;
+        } else if (!isValidAge(age)) {
+            cout << "Invalid age. Age must be between 1 and 120." << endl;
+        } else {
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            return age;
+        }
+    }
+}
+
+// This is used for menu choices and IDs.
+// It prevents letters from breaking the program.
+int HospitalSystem::getValidNumber(string message) {
+    int number;
+
+    while (true) {
+        cout << message;
+        cin >> number;
+
+        if (cin.fail()) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input. Please enter a number." << endl;
+        } else {
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            return number;
+        }
+    }
+}
+
 void HospitalSystem::showMainMenu() {
     int choice;
 
@@ -35,8 +207,8 @@ void HospitalSystem::showMainMenu() {
         cout << "\n===== Hospital Scheduling System =====" << endl;
         cout << "1. Admin Menu" << endl;
         cout << "2. Exit" << endl;
-        cout << "Enter your choice: ";
-        cin >> choice;
+
+        choice = getValidNumber("Enter your choice: ");
 
         switch (choice) {
             case 1:
@@ -68,8 +240,8 @@ void HospitalSystem::showAdminMenu() {
         cout << "7. View Appointments" << endl;
         cout << "8. Cancel Appointment" << endl;
         cout << "9. Back to Main Menu" << endl;
-        cout << "Enter your choice: ";
-        cin >> choice;
+
+        choice = getValidNumber("Enter your choice: ");
 
         try {
             switch (choice) {
@@ -122,25 +294,12 @@ void HospitalSystem::showAdminMenu() {
 void HospitalSystem::addDoctor() {
     string name, phone, email, specialization, availableDay, availableTime;
 
-    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-
-    cout << "Enter doctor name: ";
-    getline(cin, name);
-
-    cout << "Enter phone: ";
-    getline(cin, phone);
-
-    cout << "Enter email: ";
-    getline(cin, email);
-
-    cout << "Enter specialization: ";
-    getline(cin, specialization);
-
-    cout << "Enter available day: ";
-    getline(cin, availableDay);
-
-    cout << "Enter available time: ";
-    getline(cin, availableTime);
+    name = getRequiredText("Enter doctor name: ");
+    phone = getValidPhone();
+    email = getValidEmail();
+    specialization = getRequiredText("Enter specialization: ");
+    availableDay = getValidDay();
+    availableTime = getRequiredText("Enter available time: ");
 
     Doctor doctor(nextDoctorId, name, phone, email, specialization, availableDay, availableTime);
     doctors.push_back(doctor);
@@ -153,27 +312,12 @@ void HospitalSystem::addPatient() {
     string name, phone, email, diseaseType, medicalHistory;
     int age;
 
-    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-
-    cout << "Enter patient name: ";
-    getline(cin, name);
-
-    cout << "Enter phone: ";
-    getline(cin, phone);
-
-    cout << "Enter email: ";
-    getline(cin, email);
-
-    cout << "Enter age: ";
-    cin >> age;
-
-    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-
-    cout << "Enter disease type: ";
-    getline(cin, diseaseType);
-
-    cout << "Enter medical history: ";
-    getline(cin, medicalHistory);
+    name = getRequiredText("Enter patient name: ");
+    phone = getValidPhone();
+    email = getValidEmail();
+    age = getValidAge();
+    diseaseType = getRequiredText("Enter disease type: ");
+    medicalHistory = getRequiredText("Enter medical history: ");
 
     Patient patient(nextPatientId, name, phone, email, age, diseaseType, medicalHistory);
     patients.push_back(patient);
@@ -223,31 +367,22 @@ void HospitalSystem::createAppointment() {
     }
 
     viewDoctors();
-    cout << "Enter doctor ID: ";
-    cin >> doctorId;
+    doctorId = getValidNumber("Enter doctor ID: ");
 
     if (!doctorExists(doctorId)) {
         throw AppointmentException("Doctor ID not found.");
     }
 
     viewPatients();
-    cout << "Enter patient ID: ";
-    cin >> patientId;
+    patientId = getValidNumber("Enter patient ID: ");
 
     if (!patientExists(patientId)) {
         throw AppointmentException("Patient ID not found.");
     }
 
-    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-
-    cout << "Enter appointment date: ";
-    getline(cin, date);
-
-    cout << "Enter appointment time: ";
-    getline(cin, time);
-
-    cout << "Enter reason for appointment: ";
-    getline(cin, reason);
+    date = getRequiredText("Enter appointment date: ");
+    time = getRequiredText("Enter appointment time: ");
+    reason = getRequiredText("Enter reason for appointment: ");
 
     Appointment appointment(nextAppointmentId, doctorId, patientId, date, time, "Scheduled", reason);
     appointments.push_back(appointment);
@@ -279,8 +414,7 @@ void HospitalSystem::cancelAppointment() {
 
     viewAppointments();
 
-    cout << "Enter appointment ID to cancel: ";
-    cin >> appointmentId;
+    appointmentId = getValidNumber("Enter appointment ID to cancel: ");
 
     for (Appointment& appointment : appointments) {
         if (appointment.getAppointmentId() == appointmentId) {
