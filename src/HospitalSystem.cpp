@@ -1,5 +1,6 @@
 #include "../include/HospitalSystem.h"
 #include <limits>
+#include <cctype>
 
 HospitalSystem::HospitalSystem()
     : admin(1, "System Admin", "010-0000-0000", "admin@hospital.com", 1),
@@ -34,7 +35,7 @@ bool HospitalSystem::isEmpty(string value) const {
 }
 
 // Simple email check.
-// It does not accept values like 77 because email must contain @ and .
+// It rejects wrong values like 77 because email must contain @ and .
 bool HospitalSystem::isValidEmail(string email) const {
     int atPosition = email.find('@');
     int dotPosition = email.find('.');
@@ -53,6 +54,22 @@ bool HospitalSystem::isValidEmail(string email) const {
 
     if (dotPosition == 0 || dotPosition == email.length() - 1) {
         return false;
+    }
+
+    return true;
+}
+
+// Phone number should not accept random words.
+// This allows only numbers and hyphen, like 010-1234-5678.
+bool HospitalSystem::isValidPhone(string phone) const {
+    if (phone.length() < 8 || phone.length() > 15) {
+        return false;
+    }
+
+    for (char ch : phone) {
+        if (!isdigit(ch) && ch != '-') {
+            return false;
+        }
     }
 
     return true;
@@ -106,6 +123,23 @@ string HospitalSystem::getValidEmail() {
     } while (!isValidEmail(email));
 
     return email;
+}
+
+// This keeps asking until the phone number is valid.
+string HospitalSystem::getValidPhone() {
+    string phone;
+
+    do {
+        cout << "Enter phone: ";
+        getline(cin, phone);
+
+        if (!isValidPhone(phone)) {
+            cout << "Invalid phone. Use only numbers and hyphen, like 010-1234-5678." << endl;
+        }
+
+    } while (!isValidPhone(phone));
+
+    return phone;
 }
 
 // This keeps asking until the user enters a real day name.
@@ -261,7 +295,7 @@ void HospitalSystem::addDoctor() {
     string name, phone, email, specialization, availableDay, availableTime;
 
     name = getRequiredText("Enter doctor name: ");
-    phone = getRequiredText("Enter phone: ");
+    phone = getValidPhone();
     email = getValidEmail();
     specialization = getRequiredText("Enter specialization: ");
     availableDay = getValidDay();
@@ -279,7 +313,7 @@ void HospitalSystem::addPatient() {
     int age;
 
     name = getRequiredText("Enter patient name: ");
-    phone = getRequiredText("Enter phone: ");
+    phone = getValidPhone();
     email = getValidEmail();
     age = getValidAge();
     diseaseType = getRequiredText("Enter disease type: ");
