@@ -30,15 +30,17 @@ private:
     bool doctorExists(int doctorId) const;
     bool patientExists(int patientId) const;
 
-    // These functions are used to check user input before saving it.
+    // These functions check whether the user input is acceptable.
     bool isEmpty(string value) const;
     bool isValidEmail(string email) const;
+    bool isValidPhone(string phone) const;
     bool isValidDay(string day) const;
     bool isValidAge(int age) const;
 
     // These functions keep asking until the user enters correct data.
     string getRequiredText(string message);
     string getValidEmail();
+    string getValidPhone();
     string getValidDay();
     int getValidAge();
     int getValidNumber(string message);
