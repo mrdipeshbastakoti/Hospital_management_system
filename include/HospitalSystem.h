@@ -47,7 +47,7 @@ private:
     int getValidAge();
     int getValidNumber(string message);
 
-    // Login helpers.
+    // Login helper functions.
     bool checkAdminLogin();
     int findDoctorByLogin(string email, string password) const;
     int findPatientByLogin(string email, string password) const;

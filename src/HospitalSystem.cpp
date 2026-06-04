@@ -2,6 +2,45 @@
 #include <limits>
 #include <cctype>
 
+// Removes spaces from the beginning and end of text.
+string trimText(string text) {
+    while (!text.empty() && text[0] == ' ') {
+        text.erase(0, 1);
+    }
+
+    while (!text.empty() && text[text.length() - 1] == ' ') {
+        text.erase(text.length() - 1, 1);
+    }
+
+    return text;
+}
+
+// Converts text to lowercase.
+// Example: Monday, monday, MONDAY all become monday.
+string toLowerText(string text) {
+    for (char& ch : text) {
+        ch = tolower(ch);
+    }
+
+    return text;
+}
+
+// Converts a valid day into clean format.
+string formatDay(string day) {
+    day = trimText(day);
+    day = toLowerText(day);
+
+    if (day == "monday") return "Monday";
+    if (day == "tuesday") return "Tuesday";
+    if (day == "wednesday") return "Wednesday";
+    if (day == "thursday") return "Thursday";
+    if (day == "friday") return "Friday";
+    if (day == "saturday") return "Saturday";
+    if (day == "sunday") return "Sunday";
+
+    return "";
+}
+
 HospitalSystem::HospitalSystem()
     : admin(1, "System Admin", "010-0000-0000", "admin@hospital.com", "admin123", 1),
       nextDoctorId(1),
@@ -35,6 +74,7 @@ bool HospitalSystem::isEmpty(string value) const {
 }
 
 // Simple email check.
+// It rejects wrong values like 77 because email must contain @ and .
 bool HospitalSystem::isValidEmail(string email) const {
     int atPosition = email.find('@');
     int dotPosition = email.find('.');
@@ -74,15 +114,10 @@ bool HospitalSystem::isValidPhone(string phone) const {
     return true;
 }
 
-// Only real week days are accepted.
+// Checks one day only.
+// The real multiple-day input is handled in getValidDay().
 bool HospitalSystem::isValidDay(string day) const {
-    return day == "Monday" ||
-           day == "Tuesday" ||
-           day == "Wednesday" ||
-           day == "Thursday" ||
-           day == "Friday" ||
-           day == "Saturday" ||
-           day == "Sunday";
+    return formatDay(day) != "";
 }
 
 // Age should be realistic.
@@ -103,6 +138,8 @@ string HospitalSystem::getRequiredText(string message) {
         cout << message;
         getline(cin, value);
 
+        value = trimText(value);
+
         if (isEmpty(value)) {
             cout << "This field cannot be empty. Please try again." << endl;
         }
@@ -119,6 +156,8 @@ string HospitalSystem::getValidEmail() {
     do {
         cout << "Enter email: ";
         getline(cin, email);
+
+        email = trimText(email);
 
         if (!isValidEmail(email)) {
             cout << "Invalid email. Email must contain @ and ." << endl;
@@ -137,6 +176,8 @@ string HospitalSystem::getValidPhone() {
         cout << "Enter phone: ";
         getline(cin, phone);
 
+        phone = trimText(phone);
+
         if (!isValidPhone(phone)) {
             cout << "Invalid phone. Use only numbers and hyphen, like 010-1234-5678." << endl;
         }
@@ -146,21 +187,66 @@ string HospitalSystem::getValidPhone() {
     return phone;
 }
 
-// This keeps asking until the user enters a real day name.
+// This asks how many days the doctor is available.
+// Then it asks each day one by one and saves them neatly.
 string HospitalSystem::getValidDay() {
-    string day;
+    int numberOfDays;
+    vector<string> availableDays;
 
-    do {
-        cout << "Enter available day: ";
-        getline(cin, day);
+    while (true) {
+        numberOfDays = getValidNumber("How many available days? ");
 
-        if (!isValidDay(day)) {
-            cout << "Invalid day. Please enter Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, or Sunday." << endl;
+        if (numberOfDays >= 1 && numberOfDays <= 7) {
+            break;
         }
 
-    } while (!isValidDay(day));
+        cout << "Invalid number. Please enter between 1 and 7." << endl;
+    }
 
-    return day;
+    for (int i = 1; i <= numberOfDays; i++) {
+        string day;
+        string fixedDay;
+        bool duplicate;
+
+        do {
+            cout << "Enter available day " << i << ": ";
+            getline(cin, day);
+
+            fixedDay = formatDay(day);
+            duplicate = false;
+
+            if (fixedDay == "") {
+                cout << "Invalid day. Please enter Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, or Sunday." << endl;
+                continue;
+            }
+
+            for (const string& existingDay : availableDays) {
+                if (existingDay == fixedDay) {
+                    duplicate = true;
+                    break;
+                }
+            }
+
+            if (duplicate) {
+                cout << "This day is already added. Please enter another day." << endl;
+            }
+
+        } while (fixedDay == "" || duplicate);
+
+        availableDays.push_back(fixedDay);
+    }
+
+    string result = "";
+
+    for (int i = 0; i < availableDays.size(); i++) {
+        result += availableDays[i];
+
+        if (i != availableDays.size() - 1) {
+            result += ", ";
+        }
+    }
+
+    return result;
 }
 
 // This keeps asking until the password is acceptable.
@@ -170,6 +256,8 @@ string HospitalSystem::getValidPassword() {
     do {
         cout << "Enter password: ";
         getline(cin, password);
+
+        password = trimText(password);
 
         if (!isValidPassword(password)) {
             cout << "Invalid password. Password must be at least 4 characters." << endl;
