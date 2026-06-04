@@ -6,9 +6,9 @@ Patient::Patient()
 }
 
 // This constructor is used when we create a patient with full details.
-Patient::Patient(int id, string name, string phone, string email,
+Patient::Patient(int id, string name, string phone, string email, string password,
                  int age, string diseaseType, string medicalHistory)
-    : User(id, name, phone, email),
+    : User(id, name, phone, email, password),
       age(age),
       diseaseType(diseaseType),
       medicalHistory(medicalHistory) {
@@ -38,6 +38,8 @@ void Patient::setMedicalHistory(string newMedicalHistory) {
     medicalHistory = newMedicalHistory;
 }
 
+// Shows patient details.
+// Password is not displayed for security.
 void Patient::displayInfo() const {
     cout << "Patient ID: " << id << endl;
     cout << "Name: " << name << endl;

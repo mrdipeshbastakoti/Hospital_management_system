@@ -13,7 +13,7 @@ private:
 
 public:
     Admin();
-    Admin(int id, string name, string phone, string email, int adminLevel);
+    Admin(int id, string name, string phone, string email, string password, int adminLevel);
 
     int getAdminLevel() const;
     void setAdminLevel(int newAdminLevel);
