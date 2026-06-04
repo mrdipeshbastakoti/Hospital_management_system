@@ -1,6 +1,9 @@
 #include "../include/HospitalSystem.h"
+
 #include <limits>
 #include <cctype>
+#include <fstream>
+#include <sstream>
 
 // Removes spaces from the beginning and end of text.
 string trimText(string text) {
@@ -41,11 +44,26 @@ string formatDay(string day) {
     return "";
 }
 
+// Splits one line from a file using a separator.
+// Example: 1|John|email becomes separate parts.
+vector<string> splitLine(string line, char separator) {
+    vector<string> parts;
+    string part;
+    stringstream ss(line);
+
+    while (getline(ss, part, separator)) {
+        parts.push_back(part);
+    }
+
+    return parts;
+}
+
 HospitalSystem::HospitalSystem()
     : admin(1, "System Admin", "010-0000-0000", "admin@hospital.com", "admin123", 1),
       nextDoctorId(1),
       nextPatientId(101),
       nextAppointmentId(1001) {
+    loadData();
 }
 
 // Checks if a doctor ID exists in the doctor list.
@@ -55,6 +73,7 @@ bool HospitalSystem::doctorExists(int doctorId) const {
             return true;
         }
     }
+
     return false;
 }
 
@@ -65,6 +84,7 @@ bool HospitalSystem::patientExists(int patientId) const {
             return true;
         }
     }
+
     return false;
 }
 
@@ -406,6 +426,7 @@ void HospitalSystem::showMainMenu() {
             }
 
             case 4:
+                saveData();
                 cout << "Exiting system..." << endl;
                 break;
 
@@ -551,6 +572,8 @@ void HospitalSystem::addDoctor() {
     Doctor doctor(nextDoctorId, name, phone, email, password, specialization, availableDay, availableTime);
     doctors.push_back(doctor);
 
+    saveData();
+
     cout << "Doctor added successfully. Doctor ID is " << nextDoctorId << endl;
     nextDoctorId++;
 }
@@ -569,6 +592,8 @@ void HospitalSystem::addPatient() {
 
     Patient patient(nextPatientId, name, phone, email, password, age, diseaseType, medicalHistory);
     patients.push_back(patient);
+
+    saveData();
 
     cout << "Patient added successfully. Patient ID is " << nextPatientId << endl;
     nextPatientId++;
@@ -635,6 +660,8 @@ void HospitalSystem::createAppointment() {
     Appointment appointment(nextAppointmentId, doctorId, patientId, date, time, "Scheduled", reason);
     appointments.push_back(appointment);
 
+    saveData();
+
     cout << "Appointment created successfully. Appointment ID is " << nextAppointmentId << endl;
     nextAppointmentId++;
 }
@@ -660,6 +687,8 @@ void HospitalSystem::createPatientAppointment(int patientId) {
 
     Appointment appointment(nextAppointmentId, doctorId, patientId, date, time, "Scheduled", reason);
     appointments.push_back(appointment);
+
+    saveData();
 
     cout << "Appointment created successfully. Appointment ID is " << nextAppointmentId << endl;
     nextAppointmentId++;
@@ -729,6 +758,7 @@ void HospitalSystem::cancelAppointment() {
     for (Appointment& appointment : appointments) {
         if (appointment.getAppointmentId() == appointmentId) {
             appointment.cancelAppointment();
+            saveData();
             cout << "Appointment cancelled successfully." << endl;
             return;
         }
@@ -752,10 +782,191 @@ void HospitalSystem::cancelPatientAppointment(int patientId) {
         if (appointment.getAppointmentId() == appointmentId &&
             appointment.getPatientId() == patientId) {
             appointment.cancelAppointment();
+            saveData();
             cout << "Appointment cancelled successfully." << endl;
             return;
         }
     }
 
     throw AppointmentException("Appointment ID not found for this patient.");
+}
+
+// Loads all saved data when the program starts.
+void HospitalSystem::loadData() {
+    loadDoctors();
+    loadPatients();
+    loadAppointments();
+}
+
+// Saves all data to text files.
+void HospitalSystem::saveData() const {
+    saveDoctors();
+    savePatients();
+    saveAppointments();
+}
+
+// Loads doctors from data/doctors.txt
+void HospitalSystem::loadDoctors() {
+    ifstream file("data/doctors.txt");
+    string line;
+
+    while (getline(file, line)) {
+        if (line.empty()) {
+            continue;
+        }
+
+        vector<string> parts = splitLine(line, '|');
+
+        if (parts.size() == 8) {
+            int id = stoi(parts[0]);
+
+            Doctor doctor(
+                id,
+                parts[1],
+                parts[2],
+                parts[3],
+                parts[4],
+                parts[5],
+                parts[6],
+                parts[7]
+            );
+
+            doctors.push_back(doctor);
+
+            if (id >= nextDoctorId) {
+                nextDoctorId = id + 1;
+            }
+        }
+    }
+
+    file.close();
+}
+
+// Loads patients from data/patients.txt
+void HospitalSystem::loadPatients() {
+    ifstream file("data/patients.txt");
+    string line;
+
+    while (getline(file, line)) {
+        if (line.empty()) {
+            continue;
+        }
+
+        vector<string> parts = splitLine(line, '|');
+
+        if (parts.size() == 8) {
+            int id = stoi(parts[0]);
+            int age = stoi(parts[5]);
+
+            Patient patient(
+                id,
+                parts[1],
+                parts[2],
+                parts[3],
+                parts[4],
+                age,
+                parts[6],
+                parts[7]
+            );
+
+            patients.push_back(patient);
+
+            if (id >= nextPatientId) {
+                nextPatientId = id + 1;
+            }
+        }
+    }
+
+    file.close();
+}
+
+// Loads appointments from data/appointments.txt
+void HospitalSystem::loadAppointments() {
+    ifstream file("data/appointments.txt");
+    string line;
+
+    while (getline(file, line)) {
+        if (line.empty()) {
+            continue;
+        }
+
+        vector<string> parts = splitLine(line, '|');
+
+        if (parts.size() == 7) {
+            int appointmentId = stoi(parts[0]);
+            int doctorId = stoi(parts[1]);
+            int patientId = stoi(parts[2]);
+
+            Appointment appointment(
+                appointmentId,
+                doctorId,
+                patientId,
+                parts[3],
+                parts[4],
+                parts[5],
+                parts[6]
+            );
+
+            appointments.push_back(appointment);
+
+            if (appointmentId >= nextAppointmentId) {
+                nextAppointmentId = appointmentId + 1;
+            }
+        }
+    }
+
+    file.close();
+}
+
+// Saves doctors to data/doctors.txt
+void HospitalSystem::saveDoctors() const {
+    ofstream file("data/doctors.txt");
+
+    for (const Doctor& doctor : doctors) {
+        file << doctor.getId() << "|"
+             << doctor.getName() << "|"
+             << doctor.getPhone() << "|"
+             << doctor.getEmail() << "|"
+             << doctor.getPassword() << "|"
+             << doctor.getSpecialization() << "|"
+             << doctor.getAvailableDay() << "|"
+             << doctor.getAvailableTime() << endl;
+    }
+
+    file.close();
+}
+
+// Saves patients to data/patients.txt
+void HospitalSystem::savePatients() const {
+    ofstream file("data/patients.txt");
+
+    for (const Patient& patient : patients) {
+        file << patient.getId() << "|"
+             << patient.getName() << "|"
+             << patient.getPhone() << "|"
+             << patient.getEmail() << "|"
+             << patient.getPassword() << "|"
+             << patient.getAge() << "|"
+             << patient.getDiseaseType() << "|"
+             << patient.getMedicalHistory() << endl;
+    }
+
+    file.close();
+}
+
+// Saves appointments to data/appointments.txt
+void HospitalSystem::saveAppointments() const {
+    ofstream file("data/appointments.txt");
+
+    for (const Appointment& appointment : appointments) {
+        file << appointment.getAppointmentId() << "|"
+             << appointment.getDoctorId() << "|"
+             << appointment.getPatientId() << "|"
+             << appointment.getDate() << "|"
+             << appointment.getTime() << "|"
+             << appointment.getStatus() << "|"
+             << appointment.getReason() << endl;
+    }
+
+    file.close();
 }
