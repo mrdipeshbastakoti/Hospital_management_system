@@ -13,7 +13,7 @@
 using namespace std;
 
 // This class controls the whole hospital system.
-// It connects admin, doctors, patients, and appointments together.
+// It connects admin, doctors, patients, appointments, login, validation, and files.
 class HospitalSystem {
 private:
     Admin admin;
@@ -51,6 +51,18 @@ private:
     bool checkAdminLogin();
     int findDoctorByLogin(string email, string password) const;
     int findPatientByLogin(string email, string password) const;
+
+    // File handling functions.
+    void loadData();
+    void saveData() const;
+
+    void loadDoctors();
+    void loadPatients();
+    void loadAppointments();
+
+    void saveDoctors() const;
+    void savePatients() const;
+    void saveAppointments() const;
 
 public:
     HospitalSystem();
