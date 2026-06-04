@@ -15,7 +15,7 @@ private:
 
 public:
     Doctor();
-    Doctor(int id, string name, string phone, string email,
+    Doctor(int id, string name, string phone, string email, string password,
            string specialization, string availableDay, string availableTime);
 
     string getSpecialization() const;

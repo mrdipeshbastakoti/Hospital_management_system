@@ -6,9 +6,9 @@ Doctor::Doctor()
 }
 
 // This constructor is used when we create a doctor with full details.
-Doctor::Doctor(int id, string name, string phone, string email,
+Doctor::Doctor(int id, string name, string phone, string email, string password,
                string specialization, string availableDay, string availableTime)
-    : User(id, name, phone, email),
+    : User(id, name, phone, email, password),
       specialization(specialization),
       availableDay(availableDay),
       availableTime(availableTime) {
@@ -38,6 +38,8 @@ void Doctor::setAvailableTime(string newAvailableTime) {
     availableTime = newAvailableTime;
 }
 
+// Shows doctor details.
+// Password is not displayed for security.
 void Doctor::displayInfo() const {
     cout << "Doctor ID: " << id << endl;
     cout << "Name: " << name << endl;

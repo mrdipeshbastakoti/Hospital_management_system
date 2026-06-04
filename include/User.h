@@ -13,10 +13,11 @@ protected:
     string name;
     string phone;
     string email;
+    string password;
 
 public:
     User();
-    User(int id, string name, string phone, string email);
+    User(int id, string name, string phone, string email, string password);
 
     // Destructor is virtual because this class will be inherited.
     virtual ~User();
@@ -25,10 +26,12 @@ public:
     string getName() const;
     string getPhone() const;
     string getEmail() const;
+    string getPassword() const;
 
     void setName(string newName);
     void setPhone(string newPhone);
     void setEmail(string newEmail);
+    void setPassword(string newPassword);
 
     // These functions must be written differently in each child class.
     virtual void displayInfo() const = 0;

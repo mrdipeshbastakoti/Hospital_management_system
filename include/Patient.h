@@ -15,7 +15,7 @@ private:
 
 public:
     Patient();
-    Patient(int id, string name, string phone, string email,
+    Patient(int id, string name, string phone, string email, string password,
             int age, string diseaseType, string medicalHistory);
 
     int getAge() const;

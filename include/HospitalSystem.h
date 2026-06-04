@@ -36,20 +36,30 @@ private:
     bool isValidPhone(string phone) const;
     bool isValidDay(string day) const;
     bool isValidAge(int age) const;
+    bool isValidPassword(string password) const;
 
     // These functions keep asking until the user enters correct data.
     string getRequiredText(string message);
     string getValidEmail();
     string getValidPhone();
     string getValidDay();
+    string getValidPassword();
     int getValidAge();
     int getValidNumber(string message);
+
+    // Login helpers.
+    bool checkAdminLogin();
+    int findDoctorByLogin(string email, string password) const;
+    int findPatientByLogin(string email, string password) const;
 
 public:
     HospitalSystem();
 
     void showMainMenu();
+
     void showAdminMenu();
+    void showDoctorMenu(int doctorIndex);
+    void showPatientMenu(int patientIndex);
 
     void addDoctor();
     void addPatient();
@@ -60,6 +70,11 @@ public:
     void createAppointment();
     void viewAppointments() const;
     void cancelAppointment();
+
+    void viewDoctorAppointments(int doctorId) const;
+    void viewPatientAppointments(int patientId) const;
+    void createPatientAppointment(int patientId);
+    void cancelPatientAppointment(int patientId);
 };
 
 #endif

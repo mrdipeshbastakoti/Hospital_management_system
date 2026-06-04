@@ -3,7 +3,7 @@
 #include <cctype>
 
 HospitalSystem::HospitalSystem()
-    : admin(1, "System Admin", "010-0000-0000", "admin@hospital.com", 1),
+    : admin(1, "System Admin", "010-0000-0000", "admin@hospital.com", "admin123", 1),
       nextDoctorId(1),
       nextPatientId(101),
       nextAppointmentId(1001) {
@@ -35,7 +35,6 @@ bool HospitalSystem::isEmpty(string value) const {
 }
 
 // Simple email check.
-// It rejects wrong values like 77 because email must contain @ and .
 bool HospitalSystem::isValidEmail(string email) const {
     int atPosition = email.find('@');
     int dotPosition = email.find('.');
@@ -89,6 +88,11 @@ bool HospitalSystem::isValidDay(string day) const {
 // Age should be realistic.
 bool HospitalSystem::isValidAge(int age) const {
     return age > 0 && age <= 120;
+}
+
+// Password should not be too short.
+bool HospitalSystem::isValidPassword(string password) const {
+    return password.length() >= 4;
 }
 
 // This is used for text fields that cannot be empty.
@@ -159,6 +163,23 @@ string HospitalSystem::getValidDay() {
     return day;
 }
 
+// This keeps asking until the password is acceptable.
+string HospitalSystem::getValidPassword() {
+    string password;
+
+    do {
+        cout << "Enter password: ";
+        getline(cin, password);
+
+        if (!isValidPassword(password)) {
+            cout << "Invalid password. Password must be at least 4 characters." << endl;
+        }
+
+    } while (!isValidPassword(password));
+
+    return password;
+}
+
 // This keeps asking until the user enters a valid age number.
 int HospitalSystem::getValidAge() {
     int age;
@@ -200,22 +221,103 @@ int HospitalSystem::getValidNumber(string message) {
     }
 }
 
+// Checks admin email and password.
+bool HospitalSystem::checkAdminLogin() {
+    string email, password;
+
+    cout << "\n===== Admin Login =====" << endl;
+    email = getRequiredText("Enter admin email: ");
+    password = getRequiredText("Enter admin password: ");
+
+    if (email == admin.getEmail() && password == admin.getPassword()) {
+        cout << "Admin login successful." << endl;
+        return true;
+    }
+
+    cout << "Invalid admin email or password." << endl;
+    return false;
+}
+
+// Returns doctor index if login is correct. Otherwise returns -1.
+int HospitalSystem::findDoctorByLogin(string email, string password) const {
+    for (int i = 0; i < doctors.size(); i++) {
+        if (doctors[i].getEmail() == email && doctors[i].getPassword() == password) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+// Returns patient index if login is correct. Otherwise returns -1.
+int HospitalSystem::findPatientByLogin(string email, string password) const {
+    for (int i = 0; i < patients.size(); i++) {
+        if (patients[i].getEmail() == email && patients[i].getPassword() == password) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
 void HospitalSystem::showMainMenu() {
     int choice;
 
     do {
         cout << "\n===== Hospital Scheduling System =====" << endl;
-        cout << "1. Admin Menu" << endl;
-        cout << "2. Exit" << endl;
+        cout << "1. Admin Login" << endl;
+        cout << "2. Doctor Login" << endl;
+        cout << "3. Patient Login" << endl;
+        cout << "4. Exit" << endl;
 
         choice = getValidNumber("Enter your choice: ");
 
         switch (choice) {
             case 1:
-                showAdminMenu();
+                if (checkAdminLogin()) {
+                    showAdminMenu();
+                }
                 break;
 
-            case 2:
+            case 2: {
+                string email, password;
+
+                cout << "\n===== Doctor Login =====" << endl;
+                email = getRequiredText("Enter doctor email: ");
+                password = getRequiredText("Enter doctor password: ");
+
+                int doctorIndex = findDoctorByLogin(email, password);
+
+                if (doctorIndex != -1) {
+                    cout << "Doctor login successful." << endl;
+                    showDoctorMenu(doctorIndex);
+                } else {
+                    cout << "Invalid doctor email or password." << endl;
+                }
+
+                break;
+            }
+
+            case 3: {
+                string email, password;
+
+                cout << "\n===== Patient Login =====" << endl;
+                email = getRequiredText("Enter patient email: ");
+                password = getRequiredText("Enter patient password: ");
+
+                int patientIndex = findPatientByLogin(email, password);
+
+                if (patientIndex != -1) {
+                    cout << "Patient login successful." << endl;
+                    showPatientMenu(patientIndex);
+                } else {
+                    cout << "Invalid patient email or password." << endl;
+                }
+
+                break;
+            }
+
+            case 4:
                 cout << "Exiting system..." << endl;
                 break;
 
@@ -223,7 +325,7 @@ void HospitalSystem::showMainMenu() {
                 cout << "Invalid choice. Try again." << endl;
         }
 
-    } while (choice != 2);
+    } while (choice != 4);
 }
 
 void HospitalSystem::showAdminMenu() {
@@ -236,48 +338,104 @@ void HospitalSystem::showAdminMenu() {
         cout << "3. Add Patient" << endl;
         cout << "4. View Doctors" << endl;
         cout << "5. View Patients" << endl;
-        cout << "6. Create Appointment" << endl;
-        cout << "7. View Appointments" << endl;
-        cout << "8. Cancel Appointment" << endl;
-        cout << "9. Back to Main Menu" << endl;
+        cout << "6. View Appointments" << endl;
+        cout << "7. Back to Main Menu" << endl;
+
+        choice = getValidNumber("Enter your choice: ");
+
+        switch (choice) {
+            case 1:
+                admin.displayInfo();
+                break;
+
+            case 2:
+                addDoctor();
+                break;
+
+            case 3:
+                addPatient();
+                break;
+
+            case 4:
+                viewDoctors();
+                break;
+
+            case 5:
+                viewPatients();
+                break;
+
+            case 6:
+                viewAppointments();
+                break;
+
+            case 7:
+                cout << "Returning to main menu..." << endl;
+                break;
+
+            default:
+                cout << "Invalid choice. Try again." << endl;
+        }
+
+    } while (choice != 7);
+}
+
+void HospitalSystem::showDoctorMenu(int doctorIndex) {
+    int choice;
+    int doctorId = doctors[doctorIndex].getId();
+
+    do {
+        cout << "\n===== Doctor Menu =====" << endl;
+        cout << "Logged in as: " << doctors[doctorIndex].getName() << endl;
+        cout << "1. View My Appointments" << endl;
+        cout << "2. Back to Main Menu" << endl;
+
+        choice = getValidNumber("Enter your choice: ");
+
+        switch (choice) {
+            case 1:
+                viewDoctorAppointments(doctorId);
+                break;
+
+            case 2:
+                cout << "Returning to main menu..." << endl;
+                break;
+
+            default:
+                cout << "Invalid choice. Try again." << endl;
+        }
+
+    } while (choice != 2);
+}
+
+void HospitalSystem::showPatientMenu(int patientIndex) {
+    int choice;
+    int patientId = patients[patientIndex].getId();
+
+    do {
+        cout << "\n===== Patient Menu =====" << endl;
+        cout << "Logged in as: " << patients[patientIndex].getName() << endl;
+        cout << "1. Create Appointment" << endl;
+        cout << "2. View My Appointments" << endl;
+        cout << "3. Cancel My Appointment" << endl;
+        cout << "4. Back to Main Menu" << endl;
 
         choice = getValidNumber("Enter your choice: ");
 
         try {
             switch (choice) {
                 case 1:
-                    admin.displayInfo();
+                    createPatientAppointment(patientId);
                     break;
 
                 case 2:
-                    addDoctor();
+                    viewPatientAppointments(patientId);
                     break;
 
                 case 3:
-                    addPatient();
+                    cancelPatientAppointment(patientId);
                     break;
 
                 case 4:
-                    viewDoctors();
-                    break;
-
-                case 5:
-                    viewPatients();
-                    break;
-
-                case 6:
-                    createAppointment();
-                    break;
-
-                case 7:
-                    viewAppointments();
-                    break;
-
-                case 8:
-                    cancelAppointment();
-                    break;
-
-                case 9:
                     cout << "Returning to main menu..." << endl;
                     break;
 
@@ -288,20 +446,21 @@ void HospitalSystem::showAdminMenu() {
             cout << "Error: " << error.what() << endl;
         }
 
-    } while (choice != 9);
+    } while (choice != 4);
 }
 
 void HospitalSystem::addDoctor() {
-    string name, phone, email, specialization, availableDay, availableTime;
+    string name, phone, email, password, specialization, availableDay, availableTime;
 
     name = getRequiredText("Enter doctor name: ");
     phone = getValidPhone();
     email = getValidEmail();
+    password = getValidPassword();
     specialization = getRequiredText("Enter specialization: ");
     availableDay = getValidDay();
     availableTime = getRequiredText("Enter available time: ");
 
-    Doctor doctor(nextDoctorId, name, phone, email, specialization, availableDay, availableTime);
+    Doctor doctor(nextDoctorId, name, phone, email, password, specialization, availableDay, availableTime);
     doctors.push_back(doctor);
 
     cout << "Doctor added successfully. Doctor ID is " << nextDoctorId << endl;
@@ -309,17 +468,18 @@ void HospitalSystem::addDoctor() {
 }
 
 void HospitalSystem::addPatient() {
-    string name, phone, email, diseaseType, medicalHistory;
+    string name, phone, email, password, diseaseType, medicalHistory;
     int age;
 
     name = getRequiredText("Enter patient name: ");
     phone = getValidPhone();
     email = getValidEmail();
+    password = getValidPassword();
     age = getValidAge();
     diseaseType = getRequiredText("Enter disease type: ");
     medicalHistory = getRequiredText("Enter medical history: ");
 
-    Patient patient(nextPatientId, name, phone, email, age, diseaseType, medicalHistory);
+    Patient patient(nextPatientId, name, phone, email, password, age, diseaseType, medicalHistory);
     patients.push_back(patient);
 
     cout << "Patient added successfully. Patient ID is " << nextPatientId << endl;
@@ -391,6 +551,32 @@ void HospitalSystem::createAppointment() {
     nextAppointmentId++;
 }
 
+void HospitalSystem::createPatientAppointment(int patientId) {
+    int doctorId;
+    string date, time, reason;
+
+    if (doctors.empty()) {
+        throw AppointmentException("No doctors available. Please contact admin first.");
+    }
+
+    viewDoctors();
+    doctorId = getValidNumber("Enter doctor ID: ");
+
+    if (!doctorExists(doctorId)) {
+        throw AppointmentException("Doctor ID not found.");
+    }
+
+    date = getRequiredText("Enter appointment date: ");
+    time = getRequiredText("Enter appointment time: ");
+    reason = getRequiredText("Enter reason for appointment: ");
+
+    Appointment appointment(nextAppointmentId, doctorId, patientId, date, time, "Scheduled", reason);
+    appointments.push_back(appointment);
+
+    cout << "Appointment created successfully. Appointment ID is " << nextAppointmentId << endl;
+    nextAppointmentId++;
+}
+
 void HospitalSystem::viewAppointments() const {
     if (appointments.empty()) {
         cout << "No appointments found." << endl;
@@ -402,6 +588,42 @@ void HospitalSystem::viewAppointments() const {
     for (const Appointment& appointment : appointments) {
         appointment.displayAppointment();
         cout << "------------------------" << endl;
+    }
+}
+
+void HospitalSystem::viewDoctorAppointments(int doctorId) const {
+    bool found = false;
+
+    cout << "\n===== My Appointments =====" << endl;
+
+    for (const Appointment& appointment : appointments) {
+        if (appointment.getDoctorId() == doctorId) {
+            appointment.displayAppointment();
+            cout << "------------------------" << endl;
+            found = true;
+        }
+    }
+
+    if (!found) {
+        cout << "No appointments found for this doctor." << endl;
+    }
+}
+
+void HospitalSystem::viewPatientAppointments(int patientId) const {
+    bool found = false;
+
+    cout << "\n===== My Appointments =====" << endl;
+
+    for (const Appointment& appointment : appointments) {
+        if (appointment.getPatientId() == patientId) {
+            appointment.displayAppointment();
+            cout << "------------------------" << endl;
+            found = true;
+        }
+    }
+
+    if (!found) {
+        cout << "No appointments found for this patient." << endl;
     }
 }
 
@@ -425,4 +647,27 @@ void HospitalSystem::cancelAppointment() {
     }
 
     throw AppointmentException("Appointment ID not found.");
+}
+
+void HospitalSystem::cancelPatientAppointment(int patientId) {
+    int appointmentId;
+
+    if (appointments.empty()) {
+        throw AppointmentException("No appointments available to cancel.");
+    }
+
+    viewPatientAppointments(patientId);
+
+    appointmentId = getValidNumber("Enter appointment ID to cancel: ");
+
+    for (Appointment& appointment : appointments) {
+        if (appointment.getAppointmentId() == appointmentId &&
+            appointment.getPatientId() == patientId) {
+            appointment.cancelAppointment();
+            cout << "Appointment cancelled successfully." << endl;
+            return;
+        }
+    }
+
+    throw AppointmentException("Appointment ID not found for this patient.");
 }

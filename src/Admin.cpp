@@ -6,8 +6,8 @@ Admin::Admin()
 }
 
 // This constructor creates an admin with full information.
-Admin::Admin(int id, string name, string phone, string email, int adminLevel)
-    : User(id, name, phone, email), adminLevel(adminLevel) {
+Admin::Admin(int id, string name, string phone, string email, string password, int adminLevel)
+    : User(id, name, phone, email, password), adminLevel(adminLevel) {
 }
 
 int Admin::getAdminLevel() const {
@@ -19,6 +19,7 @@ void Admin::setAdminLevel(int newAdminLevel) {
 }
 
 // Shows admin details.
+// Password is not displayed for security.
 void Admin::displayInfo() const {
     cout << "Admin ID: " << id << endl;
     cout << "Name: " << name << endl;
@@ -30,4 +31,3 @@ void Admin::displayInfo() const {
 string Admin::getRole() const {
     return "Admin";
 }
-//c 
