@@ -32,18 +32,26 @@ private:
 
     // These functions check whether the user input is acceptable.
     bool isEmpty(string value) const;
+    bool containsPipe(string value) const;
+    bool isValidNameText(string value) const;
     bool isValidEmail(string email) const;
     bool isValidPhone(string phone) const;
     bool isValidDay(string day) const;
     bool isValidAge(int age) const;
     bool isValidPassword(string password) const;
+    bool isValidDate(string date) const;
+    bool isValidTime(string time) const;
 
     // These functions keep asking until the user enters correct data.
     string getRequiredText(string message);
+    string getNameText(string message);
+    string getFileSafeText(string message);
     string getValidEmail();
     string getValidPhone();
     string getValidDay();
     string getValidPassword();
+    string getValidDate();
+    string getValidTime();
     int getValidAge();
     int getValidNumber(string message);
 
