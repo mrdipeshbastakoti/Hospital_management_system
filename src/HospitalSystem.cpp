@@ -93,13 +93,35 @@ bool HospitalSystem::isEmpty(string value) const {
     return value.length() == 0;
 }
 
+// Checks if text contains the file separator symbol.
+// We block this because file saving uses | between fields.
+bool HospitalSystem::containsPipe(string value) const {
+    return value.find('|') != string::npos;
+}
+
+// Used for names and specialization.
+// It rejects numbers like dipe2.
+bool HospitalSystem::isValidNameText(string value) const {
+    if (isEmpty(value) || containsPipe(value)) {
+        return false;
+    }
+
+    for (char ch : value) {
+        if (!isalpha(ch) && ch != ' ' && ch != '-' && ch != '\'') {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 // Simple email check.
 // It rejects wrong values like 77 because email must contain @ and .
 bool HospitalSystem::isValidEmail(string email) const {
     int atPosition = email.find('@');
     int dotPosition = email.find('.');
 
-    if (email.length() < 5) {
+    if (email.length() < 5 || containsPipe(email)) {
         return false;
     }
 
@@ -121,17 +143,21 @@ bool HospitalSystem::isValidEmail(string email) const {
 // Phone number should not accept random words.
 // This allows only numbers and hyphen, like 010-1234-5678.
 bool HospitalSystem::isValidPhone(string phone) const {
-    if (phone.length() < 8 || phone.length() > 15) {
+    int digitCount = 0;
+
+    if (phone.length() < 8 || phone.length() > 15 || containsPipe(phone)) {
         return false;
     }
 
     for (char ch : phone) {
-        if (!isdigit(ch) && ch != '-') {
+        if (isdigit(ch)) {
+            digitCount++;
+        } else if (ch != '-') {
             return false;
         }
     }
 
-    return true;
+    return digitCount >= 8;
 }
 
 // Checks one day only.
@@ -145,12 +171,60 @@ bool HospitalSystem::isValidAge(int age) const {
     return age > 0 && age <= 120;
 }
 
-// Password should not be too short.
+// Password should not be too short and should not contain file separator.
 bool HospitalSystem::isValidPassword(string password) const {
-    return password.length() >= 4;
+    return password.length() >= 4 && !containsPipe(password);
 }
 
-// This is used for text fields that cannot be empty.
+// Checks date format: YYYY-MM-DD
+bool HospitalSystem::isValidDate(string date) const {
+    if (date.length() != 10 || containsPipe(date)) {
+        return false;
+    }
+
+    if (date[4] != '-' || date[7] != '-') {
+        return false;
+    }
+
+    for (int i = 0; i < date.length(); i++) {
+        if (i == 4 || i == 7) {
+            continue;
+        }
+
+        if (!isdigit(date[i])) {
+            return false;
+        }
+    }
+
+    int month = stoi(date.substr(5, 2));
+    int day = stoi(date.substr(8, 2));
+
+    return month >= 1 && month <= 12 && day >= 1 && day <= 31;
+}
+
+// Checks time format: HH:MM
+bool HospitalSystem::isValidTime(string time) const {
+    if (time.length() != 5 || containsPipe(time)) {
+        return false;
+    }
+
+    if (time[2] != ':') {
+        return false;
+    }
+
+    if (!isdigit(time[0]) || !isdigit(time[1]) ||
+        !isdigit(time[3]) || !isdigit(time[4])) {
+        return false;
+    }
+
+    int hour = stoi(time.substr(0, 2));
+    int minute = stoi(time.substr(3, 2));
+
+    return hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59;
+}
+
+// This is used for normal text fields that cannot be empty.
+// It also blocks | because | is used in file saving.
 string HospitalSystem::getRequiredText(string message) {
     string value;
 
@@ -162,9 +236,54 @@ string HospitalSystem::getRequiredText(string message) {
 
         if (isEmpty(value)) {
             cout << "This field cannot be empty. Please try again." << endl;
+        } else if (containsPipe(value)) {
+            cout << "Invalid input. Please do not use the | symbol." << endl;
         }
 
-    } while (isEmpty(value));
+    } while (isEmpty(value) || containsPipe(value));
+
+    return value;
+}
+
+// Used for names and specialization.
+// It accepts letters, spaces, hyphen, and apostrophe only.
+string HospitalSystem::getNameText(string message) {
+    string value;
+
+    do {
+        cout << message;
+        getline(cin, value);
+
+        value = trimText(value);
+
+        if (!isValidNameText(value)) {
+            cout << "Invalid input. Use letters only. Numbers and symbols are not allowed." << endl;
+        }
+
+    } while (!isValidNameText(value));
+
+    return value;
+}
+
+// Used for text fields that may contain numbers.
+// Example: Diabetes type 2, Fever for 3 days.
+// It only blocks empty input and | symbol.
+string HospitalSystem::getFileSafeText(string message) {
+    string value;
+
+    do {
+        cout << message;
+        getline(cin, value);
+
+        value = trimText(value);
+
+        if (isEmpty(value)) {
+            cout << "This field cannot be empty. Please try again." << endl;
+        } else if (containsPipe(value)) {
+            cout << "Invalid input. Please do not use the | symbol." << endl;
+        }
+
+    } while (isEmpty(value) || containsPipe(value));
 
     return value;
 }
@@ -180,7 +299,7 @@ string HospitalSystem::getValidEmail() {
         email = trimText(email);
 
         if (!isValidEmail(email)) {
-            cout << "Invalid email. Email must contain @ and ." << endl;
+            cout << "Invalid email. Email must contain @ and . Do not use | symbol." << endl;
         }
 
     } while (!isValidEmail(email));
@@ -280,12 +399,50 @@ string HospitalSystem::getValidPassword() {
         password = trimText(password);
 
         if (!isValidPassword(password)) {
-            cout << "Invalid password. Password must be at least 4 characters." << endl;
+            cout << "Invalid password. Password must be at least 4 characters and cannot contain |." << endl;
         }
 
     } while (!isValidPassword(password));
 
     return password;
+}
+
+// Keeps asking until date format is correct.
+string HospitalSystem::getValidDate() {
+    string date;
+
+    do {
+        cout << "Enter appointment date (YYYY-MM-DD): ";
+        getline(cin, date);
+
+        date = trimText(date);
+
+        if (!isValidDate(date)) {
+            cout << "Invalid date. Use format YYYY-MM-DD, example: 2026-06-10." << endl;
+        }
+
+    } while (!isValidDate(date));
+
+    return date;
+}
+
+// Keeps asking until time format is correct.
+string HospitalSystem::getValidTime() {
+    string time;
+
+    do {
+        cout << "Enter appointment time (HH:MM): ";
+        getline(cin, time);
+
+        time = trimText(time);
+
+        if (!isValidTime(time)) {
+            cout << "Invalid time. Use 24-hour format HH:MM, example: 14:30." << endl;
+        }
+
+    } while (!isValidTime(time));
+
+    return time;
 }
 
 // This keeps asking until the user enters a valid age number.
@@ -561,13 +718,13 @@ void HospitalSystem::showPatientMenu(int patientIndex) {
 void HospitalSystem::addDoctor() {
     string name, phone, email, password, specialization, availableDay, availableTime;
 
-    name = getRequiredText("Enter doctor name: ");
+    name = getNameText("Enter doctor name: ");
     phone = getValidPhone();
     email = getValidEmail();
     password = getValidPassword();
-    specialization = getRequiredText("Enter specialization: ");
+    specialization = getNameText("Enter specialization: ");
     availableDay = getValidDay();
-    availableTime = getRequiredText("Enter available time: ");
+    availableTime = getFileSafeText("Enter available time: ");
 
     Doctor doctor(nextDoctorId, name, phone, email, password, specialization, availableDay, availableTime);
     doctors.push_back(doctor);
@@ -582,13 +739,13 @@ void HospitalSystem::addPatient() {
     string name, phone, email, password, diseaseType, medicalHistory;
     int age;
 
-    name = getRequiredText("Enter patient name: ");
+    name = getNameText("Enter patient name: ");
     phone = getValidPhone();
     email = getValidEmail();
     password = getValidPassword();
     age = getValidAge();
-    diseaseType = getRequiredText("Enter disease type: ");
-    medicalHistory = getRequiredText("Enter medical history: ");
+    diseaseType = getFileSafeText("Enter disease type: ");
+    medicalHistory = getFileSafeText("Enter medical history: ");
 
     Patient patient(nextPatientId, name, phone, email, password, age, diseaseType, medicalHistory);
     patients.push_back(patient);
@@ -653,9 +810,9 @@ void HospitalSystem::createAppointment() {
         throw AppointmentException("Patient ID not found.");
     }
 
-    date = getRequiredText("Enter appointment date: ");
-    time = getRequiredText("Enter appointment time: ");
-    reason = getRequiredText("Enter reason for appointment: ");
+    date = getValidDate();
+    time = getValidTime();
+    reason = getFileSafeText("Enter reason for appointment: ");
 
     Appointment appointment(nextAppointmentId, doctorId, patientId, date, time, "Scheduled", reason);
     appointments.push_back(appointment);
@@ -681,9 +838,9 @@ void HospitalSystem::createPatientAppointment(int patientId) {
         throw AppointmentException("Doctor ID not found.");
     }
 
-    date = getRequiredText("Enter appointment date: ");
-    time = getRequiredText("Enter appointment time: ");
-    reason = getRequiredText("Enter reason for appointment: ");
+    date = getValidDate();
+    time = getValidTime();
+    reason = getFileSafeText("Enter reason for appointment: ");
 
     Appointment appointment(nextAppointmentId, doctorId, patientId, date, time, "Scheduled", reason);
     appointments.push_back(appointment);
@@ -757,6 +914,11 @@ void HospitalSystem::cancelAppointment() {
 
     for (Appointment& appointment : appointments) {
         if (appointment.getAppointmentId() == appointmentId) {
+            if (appointment.getStatus() == "Cancelled") {
+                cout << "This appointment is already cancelled." << endl;
+                return;
+            }
+
             appointment.cancelAppointment();
             saveData();
             cout << "Appointment cancelled successfully." << endl;
@@ -781,6 +943,11 @@ void HospitalSystem::cancelPatientAppointment(int patientId) {
     for (Appointment& appointment : appointments) {
         if (appointment.getAppointmentId() == appointmentId &&
             appointment.getPatientId() == patientId) {
+            if (appointment.getStatus() == "Cancelled") {
+                cout << "This appointment is already cancelled." << endl;
+                return;
+            }
+
             appointment.cancelAppointment();
             saveData();
             cout << "Appointment cancelled successfully." << endl;
@@ -818,23 +985,27 @@ void HospitalSystem::loadDoctors() {
         vector<string> parts = splitLine(line, '|');
 
         if (parts.size() == 8) {
-            int id = stoi(parts[0]);
+            try {
+                int id = stoi(parts[0]);
 
-            Doctor doctor(
-                id,
-                parts[1],
-                parts[2],
-                parts[3],
-                parts[4],
-                parts[5],
-                parts[6],
-                parts[7]
-            );
+                Doctor doctor(
+                    id,
+                    parts[1],
+                    parts[2],
+                    parts[3],
+                    parts[4],
+                    parts[5],
+                    parts[6],
+                    parts[7]
+                );
 
-            doctors.push_back(doctor);
+                doctors.push_back(doctor);
 
-            if (id >= nextDoctorId) {
-                nextDoctorId = id + 1;
+                if (id >= nextDoctorId) {
+                    nextDoctorId = id + 1;
+                }
+            } catch (...) {
+                continue;
             }
         }
     }
@@ -855,24 +1026,28 @@ void HospitalSystem::loadPatients() {
         vector<string> parts = splitLine(line, '|');
 
         if (parts.size() == 8) {
-            int id = stoi(parts[0]);
-            int age = stoi(parts[5]);
+            try {
+                int id = stoi(parts[0]);
+                int age = stoi(parts[5]);
 
-            Patient patient(
-                id,
-                parts[1],
-                parts[2],
-                parts[3],
-                parts[4],
-                age,
-                parts[6],
-                parts[7]
-            );
+                Patient patient(
+                    id,
+                    parts[1],
+                    parts[2],
+                    parts[3],
+                    parts[4],
+                    age,
+                    parts[6],
+                    parts[7]
+                );
 
-            patients.push_back(patient);
+                patients.push_back(patient);
 
-            if (id >= nextPatientId) {
-                nextPatientId = id + 1;
+                if (id >= nextPatientId) {
+                    nextPatientId = id + 1;
+                }
+            } catch (...) {
+                continue;
             }
         }
     }
@@ -893,24 +1068,28 @@ void HospitalSystem::loadAppointments() {
         vector<string> parts = splitLine(line, '|');
 
         if (parts.size() == 7) {
-            int appointmentId = stoi(parts[0]);
-            int doctorId = stoi(parts[1]);
-            int patientId = stoi(parts[2]);
+            try {
+                int appointmentId = stoi(parts[0]);
+                int doctorId = stoi(parts[1]);
+                int patientId = stoi(parts[2]);
 
-            Appointment appointment(
-                appointmentId,
-                doctorId,
-                patientId,
-                parts[3],
-                parts[4],
-                parts[5],
-                parts[6]
-            );
+                Appointment appointment(
+                    appointmentId,
+                    doctorId,
+                    patientId,
+                    parts[3],
+                    parts[4],
+                    parts[5],
+                    parts[6]
+                );
 
-            appointments.push_back(appointment);
+                appointments.push_back(appointment);
 
-            if (appointmentId >= nextAppointmentId) {
-                nextAppointmentId = appointmentId + 1;
+                if (appointmentId >= nextAppointmentId) {
+                    nextAppointmentId = appointmentId + 1;
+                }
+            } catch (...) {
+                continue;
             }
         }
     }
